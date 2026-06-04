@@ -1,0 +1,6 @@
+{
+  "name": "ViceCity News - GTA 6 Portal",
+  "description": "Il portale definitivo per Grand Theft Auto VI: notizie in tempo reale, leak confermati, eventi della community, forum di discussione e aree affiliazioni per veri appassionati.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
