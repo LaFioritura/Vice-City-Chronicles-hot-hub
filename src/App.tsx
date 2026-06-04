@@ -33,17 +33,75 @@ import {
   Smartphone,
   Eye,
   Settings,
-  ArrowRight
+  ArrowRight,
+  Compass,
+  Crosshair
 } from 'lucide-react';
 import { BLOG_POSTS, INITIAL_EVENTS, AFFILIATE_PRODUCTS, INITIAL_THEORIES, SEO_KEYWORD_CHIPS, SEO_CHECKLIST, RETRO_RADIO_STATIONS, bannerImg, gamingSetupImg, luciaArtworkImg, mapLeakImg } from './data';
 import { BlogPost, LaunchEvent, AffiliateProduct, CommunityTheory } from './types';
+
+// Robust image path resolver to handle both Vite bundled assets and potential legacy/stale localstorage paths
+export function resolveImg(url: string | undefined): string {
+  if (!url) return bannerImg;
+  if (typeof url !== 'string') return bannerImg;
+  // If already standard base64 or Vite processed asset, do not alter
+  if (url.startsWith('data:') || url.startsWith('/assets/')) return url;
+  
+  const lower = url.toLowerCase();
+  if (lower.includes('gta6_hero_banner') || lower.includes('banner')) return bannerImg;
+  if (lower.includes('gta6_gaming_setup') || lower.includes('setup') || lower.includes('rig')) return gamingSetupImg;
+  if (lower.includes('gta6_lucia_artwork') || lower.includes('lucia')) return luciaArtworkImg;
+  if (lower.includes('gta6_map_leak') || lower.includes('map')) return mapLeakImg;
+  return url;
+}
+
+export const MAP_HOTSPOTS = [
+  { id: 'vice_beach', name: 'Vice Beach & Ocean Drive', x: '75%', y: '30%', status: 'Confermato', danger: 'Basso', description: 'La riviera scintillante ispirata a Miami Beach. Luogo di pedoni hi-tech, supercar e pattuglie di lusso.', rumors: 'Svelato nel Trailer 1. Presenza di strip club, alberghi neon ed eventi stradali diurni.' },
+  { id: 'gator_rush', name: 'Gator Rush Swamps', x: '35%', y: '55%', status: 'Leak 2022', danger: 'Estremo', description: 'Gli sterminati acquitrini della Leonida occidentale. Fauna selvatica feroce (alligatori interattivi) e gang dei canali.', rumors: 'Presenza di hovercraft e caccia agli alligatori. Rifugio per criminali ricercati.' },
+  { id: 'port_gellhorn', name: 'Port Gellhorn', x: '15%', y: '25%', status: 'Brevetti RAGE', danger: 'Alto', description: 'Area industriale e portuale ad ovest. Fucina di gare clandestine, depositi di container e officine meccaniche.', rumors: 'Luogo chiave della prima rapina svelata nel leak di Jason e Lucia.' },
+  { id: 'leonida_keys', name: 'The Leonida Keys', x: '60%', y: '85%', status: 'Trailer 1 Map', danger: 'Medio', description: 'Un lungo arco di isolette paradisiache collegate da una superstrada sul mare. Ideale per contrabbando marittimo.', rumors: 'Presenza di motoscafi d\'altura, idrovolanti e stazioni radar della guardia costiera.' },
+  { id: 'vice_airport', name: 'Escobar International Airport', x: '50%', y: '48%', status: 'Speculativo', danger: 'Militarizzato', description: 'L\'aeroporto internazionale di Vice City. Altamente difeso, ospita piste di decollo e hangar blindati.', rumors: 'Possibile barriera fisica invalicabile fino al completamento delle prime rapine di Lucia.' }
+];
+
+export const WEAPONS_DATA: Record<string, any> = {
+  pistol: {
+    name: 'Pistola Pesante .45', id: 'heavypistol', damage: 65, range: 45, fireRate: 35, accuracy: 78,
+    desc: 'Un classico calibro pesante con carrello cromato. L\'arma di ordinanza preferita da Lucia.',
+    icon: '🔫'
+  },
+  smg: {
+    name: 'Micro SMG 9mm', id: 'microsmg', damage: 48, range: 35, fireRate: 92, accuracy: 52,
+    desc: 'Volume di fuoco spaventoso per scontri a corto raggio. Massima letalità durante i colpi sui veicoli.',
+    icon: '🔫'
+  },
+  shotgun: {
+    name: 'Fucile a Pompa Spas-12', id: 'spas12', damage: 95, range: 20, fireRate: 15, accuracy: 30,
+    desc: 'Devastante barriera cinetica. Spazza via i parabrezza delle forze di polizia con facilità.',
+    icon: '💥'
+  },
+  assault_rifle: {
+    name: 'Carabina d\'Assalto MK2', id: 'carabina', damage: 78, range: 75, fireRate: 65, accuracy: 82,
+    desc: 'Gittata ottimizzata e rinculo controllato. Perfetta per rapine ad alta quota e conflitti a fuoco estesi.',
+    icon: '⚔️'
+  },
+  melee: {
+    name: 'Mazza da Baseball Rosa', id: 'baseball', damage: 45, range: 5, fireRate: 20, accuracy: 95,
+    desc: 'Decorata con sfumature fucsia di Vice Beach, ideale per il pestaggio furtivo degli spacciatori rivali.',
+    icon: '🏒'
+  },
+  heavy: {
+    name: 'Lanciafiamme Gator', id: 'flamethrower', damage: 98, range: 15, fireRate: 85, accuracy: 40,
+    desc: 'Brucia il terreno e la vegetazione delle EVERGLADES. Progettato espressamente per pulire nidi di alligatori.',
+    icon: '🔥'
+  }
+};
 
 export default function App() {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<'notizie' | 'affiliazioni' | 'eventi' | 'community' | 'seo'>('notizie');
 
   // Dual-Gateway configuration state
-  const [currentGateway, setCurrentGateway] = useState<'welcome' | 'public' | 'admin'>('welcome');
+  const [currentGateway, setCurrentGateway] = useState<'welcome' | 'public' | 'admin'>('public');
   const [adminPasscode, setAdminPasscode] = useState('');
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [adminErrorMsg, setAdminErrorMsg] = useState('');
@@ -59,7 +117,11 @@ export default function App() {
   // Blog states - Dynamic database with LocalStorage
   const [blogList, setBlogList] = useState<BlogPost[]>(() => {
     const saved = localStorage.getItem('gta6_portal_blogs');
-    return saved ? JSON.parse(saved) : BLOG_POSTS;
+    const logs = saved ? JSON.parse(saved) : BLOG_POSTS;
+    return logs.map((post: any) => ({
+      ...post,
+      imageUrl: resolveImg(post.imageUrl)
+    }));
   });
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -202,7 +264,11 @@ export default function App() {
   // Events states
   const [eventsList, setEventsList] = useState<LaunchEvent[]>(() => {
     const saved = localStorage.getItem('gta6_portal_events');
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    const evts = saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    return evts.map((evt: any) => ({
+      ...evt,
+      bannerUrl: resolveImg(evt.bannerUrl)
+    }));
   });
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventOrganizer, setNewEventOrganizer] = useState('');
@@ -224,9 +290,109 @@ export default function App() {
   const [theoryContent, setTheoryContent] = useState('');
   const [votedTheories, setVotedTheories] = useState<Record<string, boolean>>({});
 
+  // Deep interactive Community tabs inside Crew & Teorie tab
+  const [communitySubTab, setCommunitySubTab] = useState<'theories' | 'cheats' | 'myths' | 'livechat'>('theories');
+  
+  // Interactive Cheat codes platform & game states
+  const [cheatGame, setCheatGame] = useState<'gta6' | 'gta5' | 'gta4'>('gta6');
+  const [cheatPlatform, setCheatPlatform] = useState<'ps' | 'xbox' | 'pc'>('ps');
+
+  // Interactive Easter eggs / Myths state (local state with loading support)
+  const [mythsList, setMythsList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('gta_portal_myths');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 'ratman-gta4',
+        title: 'Il Ratman delle Fogne di Liberty City',
+        game: 'Grand Theft Auto IV',
+        description: 'La leggenda metropolitana di un essere deforme metà uomo e metà topo che aggredisce i senzatetto nei tunnel sotterranei dismessi della metropolitana di Liberty City.',
+        confirmedVotes: 421,
+        mythVotes: 120,
+        status: 'Leggenda Urbana'
+      },
+      {
+        id: 'ghost-moundgordo',
+        title: 'Il Fantasma di Jolene Cranley-Evans',
+        game: 'Grand Theft Auto V',
+        description: 'Alle ore 23:00 compare la figura spettrale di Jolene sulla roccia settentrionale di Mount Gordo, lasciando un messaggio di sangue sul terreno.',
+        confirmedVotes: 984,
+        mythVotes: 32,
+        status: 'Confermato Reale'
+      },
+      {
+        id: 'map-arcipelago-gta6',
+        title: 'L\'Arcipelago Sommerso del Leonida State',
+        game: 'Grand Theft Auto VI',
+        description: 'Speculazione nata analizzando il Trailer 1: a sud di Gator Rush esisterebbe un arcipelago di isole minori non segnate sulla cartina principale ma esplorabili in sottomarino.',
+        confirmedVotes: 232,
+        mythVotes: 301,
+        status: 'Speculativo'
+      },
+      {
+        id: 'neon-killer-gta6',
+        title: 'Il Killer Massonico dei Neon',
+        game: 'Grand Theft Auto VI',
+        description: 'Una serie di delitti con messaggi in codice decifrabili solo allineando la prospettiva delle luci dei motel storici malfamati all\'alba.',
+        confirmedVotes: 145,
+        mythVotes: 512,
+        status: 'Anfibio / Da Scoprire'
+      }
+    ];
+  });
+
+  // Simulated Live Chat list state
+  const [chatMessages, setChatMessages] = useState<any[]>(() => {
+    return [
+      { id: 1, user: 'TommyFidelity', faction: 'Vice City Syndicate', text: 'Raga ma la fisica di guida di GTA IV rimarrà inarrivabile, spero Rockstar la riutilizzi!', time: '21:11' },
+      { id: 2, user: 'LuciaBabe98', faction: 'Lucia Loyalist', text: 'Lucia sembra cento volte più determinata di Jason nel Trailer. Sarà lei il vero boss!', time: '21:12' },
+      { id: 3, user: 'Sessanta_Speed', faction: 'No-Affiliation', text: 'Speriamo integrino la customizzazione avanzata dei motori marini! Vice City è piena d\'acqua ⛵', time: '21:13' },
+      { id: 4, user: 'PS5_Pro_User', faction: 'Jason Believer', text: 'Io spero solo giri a 60 fps granitici su PS5 Pro, sennò tocca aspettare la versione PC...', time: '21:14' },
+      { id: 5, user: 'Leonida_Gator', faction: 'Leonida Police', text: 'Avete visto il coccodrillo che entra nel supermercato nel Trailer? È il miglior dettaglio di sempre 🐊😂', time: '21:15' }
+    ];
+  });
+  const [userChatText, setUserChatText] = useState('');
+
+  // Save myths list to local storage
+  useEffect(() => {
+    localStorage.setItem('gta_portal_myths', JSON.stringify(mythsList));
+  }, [mythsList]);
+
+  // Periodic passive chat simulator
+  useEffect(() => {
+    const chatTemplates = [
+      { user: 'Niko_LC', faction: 'No-Affiliation', text: 'Voglio rivedere la Statua della Libertà col cuore che pulsa, che chicca pazzesca che era!' },
+      { user: 'ViceCityGamer', faction: 'Vice City Syndicate', text: 'Chi aprirà a mezzanotte il negozio il giorno del lancio a Roma o Milano?' },
+      { user: 'GatorHunter', faction: 'Leonida Police', text: 'I leak dicono che la mappa sarà oltre due volte quella di GTA 5. C\'è spazio per chiunque.' },
+      { user: 'JasonRulez', faction: 'Jason Believer', text: 'In GTA VI non vedo l\'ora di guidare le muscle car d\'epoca al tramonto sulla spiaggia.' },
+      { user: 'LuciaMyQueen', faction: 'Lucia Loyalist', text: 'Se Lucia ha un passato militare come dicono certi canali, si spiega la sua mira micidiale.' }
+    ];
+
+    const interval = setInterval(() => {
+      const random = chatTemplates[Math.floor(Math.random() * chatTemplates.length)];
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      setChatMessages((prev) => [
+        ...prev.slice(-15), // keep last 15 messages
+        { id: Date.now(), user: random.user, faction: random.faction, text: random.text, time: timeStr }
+      ]);
+    }, 6000); // add a funny chat line every 6 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Affiliate Budget Calculator states
   const [userBudget, setUserBudget] = useState<number>(1000);
   const [recommendedBundle, setRecommendedBundle] = useState<string>('Premium 4K Setup');
+
+  // Interactive gamification states
+  const [activeMapPin, setActiveMapPin] = useState<string>('vice_beach');
+  const [selectedWeaponSlot, setSelectedWeaponSlot] = useState<string>('pistol');
+  const [idNickname, setIdNickname] = useState<string>('TommyFidelity');
+  const [idFaction, setIdFaction] = useState<string>('Vice City Syndicate');
+  const [idSpecial, setIdSpecial] = useState<string>('Rallentatore di Guida');
+  const [idRank, setIdRank] = useState<string>('Criminologo di Quartiere');
+  const [idGenerated, setIdGenerated] = useState<boolean>(true);
+  const [chosenAvatar, setChosenAvatar] = useState<string>('lucia');
 
   // Viral AI Hook script maker states
   const [hookTopic, setHookTopic] = useState<'release_date' | 'map_leak' | 'character_romance' | 'cheats'>('release_date');
@@ -509,19 +675,27 @@ export default function App() {
         <div className="flex items-center space-x-4 text-[11px] font-mono">
           <span className="text-slate-400 hidden sm:inline">CODICE SCONTO ATTIVO: <strong className="text-yellow-400 font-bold font-mono uppercase">{activeCoupon}</strong></span>
           <span className="text-white/10 hidden sm:inline">|</span>
-          {currentGateway !== 'welcome' ? (
+          {currentGateway === 'public' ? (
             <button
               onClick={() => {
-                setCurrentGateway('welcome');
+                setCurrentGateway('admin');
                 setIsAdminUnlocked(false);
                 setAdminPasscode('');
               }}
-              className="px-2.5 py-1 bg-brand-pink/10 border border-brand-pink/30 hover:border-brand-pink hover:bg-brand-pink hover:text-white hover:scale-105 transition rounded font-mono text-[9px] text-brand-pink uppercase tracking-widest cursor-pointer inline-flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-brand-cyan/10 border border-brand-cyan/30 hover:border-brand-cyan hover:bg-brand-cyan hover:text-black hover:scale-105 transition rounded font-mono text-[9px] text-brand-cyan uppercase tracking-widest cursor-pointer inline-flex items-center gap-1.5"
             >
-              🚪 ESCI AL MENU PRINCIPALE
+              🔒 CONSOLLE REDAZIONE ADM (SEO)
             </button>
           ) : (
-            <span className="text-brand-cyan uppercase font-bold">CONNESSIONE SICURA</span>
+            <button
+              onClick={() => {
+                setCurrentGateway('public');
+                setIsAdminUnlocked(false);
+              }}
+              className="px-2.5 py-1 bg-brand-pink/10 border border-brand-pink/30 hover:border-brand-pink hover:bg-brand-pink hover:text-white hover:scale-105 transition rounded font-mono text-[9px] text-brand-pink uppercase tracking-widest cursor-pointer inline-flex items-center gap-1.5"
+            >
+              🚪 ESCI AL PORTALE PUBBLICO
+            </button>
           )}
         </div>
       </div>
@@ -964,6 +1138,369 @@ export default function App() {
               </div>
             )}
 
+            {/* INTERACTIVE GAMER COCKPIT DELLO STATO DI LEONIDA (NEW HIGH-FIDELITY ADDITION) */}
+            {!selectedPost && !searchQuery && selectedCategory === 'All' && (
+              <div className="mb-12 bg-brand-gray border-2 border-brand-pink/30 hover:border-brand-pink/50 rounded-2xl p-6 sm:p-8 relative overflow-hidden transition-all duration-300 shadow-2xl">
+                {/* Visual scanline/grid layout lines */}
+                <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-brand-cyan/10 blur-3.5xl rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-pink/10 blur-3.5xl rounded-full pointer-events-none"></div>
+
+                {/* Banner header for the nerdy dashboard */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-5 mb-8 relative z-10">
+                  <div>
+                    <span className="bg-yellow-400 text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded mr-3">
+                      STRUMENTI CRIMINOLOGI GTA VI
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-black text-white font-space uppercase tracking-tight mt-1">
+                      Leonida State <span className="text-brand-cyan neon-glow-cyan">Interactive System</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 font-mono mt-1">
+                      Esplora leak cartografici, assembla armamenti calibro pesante e genera il tuo passaporto digitale della crew.
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 text-xs font-mono text-brand-pink brightness-110 font-bold bg-black/40 border border-brand-pink/20 px-3 py-1.5 rounded">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand-pink animate-ping"></span>
+                    <span>CREW HUB COLLEGATO: RAGE-9 ENGINE</span>
+                  </div>
+                </div>
+
+                {/* Grid layout for Cockpit */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10">
+                  
+                  {/* ZONE 1: INTERACTIVE LANDMARK MAP PINTRACKER */}
+                  <div className="col-span-1 lg:col-span-5 bg-black/85 border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <Compass className="w-4 h-4 text-brand-cyan animate-spin" style={{ animationDuration: '8s' }} />
+                          <h3 className="text-xs font-black uppercase text-white font-mono tracking-widest">
+                            Leak-Map Simulator
+                          </h3>
+                        </div>
+                        <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
+                          SELEZIONA HOTSPOT
+                        </span>
+                      </div>
+
+                      {/* Interactive stylized Map area with pulsing pins */}
+                      <div className="relative h-60 w-full bg-slate-950 rounded-lg overflow-hidden border border-white/10 mb-4 shadow-inner flex items-center justify-center">
+                        {/* Background mesh grid representing Florida maps */}
+                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#05d9e8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                        
+                        {/* Abstract state outline */}
+                        <svg className="w-full h-full text-white/5 absolute" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          <path d="M15,20 L35,15 L50,45 L70,30 L85,32 L90,45 L65,75 L45,90 L25,40 Z" fill="rgba(242,5,92,0.02)" stroke="rgba(242,5,92,0.15)" strokeWidth="1" />
+                        </svg>
+
+                        {/* Rendering interactive pins on mapped coordinates */}
+                        {MAP_HOTSPOTS.map((hotspot) => (
+                          <button
+                            key={hotspot.id}
+                            onClick={() => {
+                              setActiveMapPin(hotspot.id);
+                              // Trigger alert copyable
+                            }}
+                            style={{ left: hotspot.x, top: hotspot.y }}
+                            className={`absolute transform -translate-x-1/2 -translate-y-1/2 p-1 rounded-full transition-all duration-300 text-center ${
+                              activeMapPin === hotspot.id
+                                ? 'bg-brand-pink text-white scale-125 z-20 ring-4 ring-brand-pink/30 shadow-[0_0_15px_rgba(242,5,92,0.8)]'
+                                : 'bg-black border border-brand-cyan text-brand-cyan hover:scale-110 hover:border-white z-10'
+                            }`}
+                            title={hotspot.name}
+                          >
+                            <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                              {activeMapPin === hotspot.id && (
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-pink opacity-75"></span>
+                              )}
+                              <span className="relative rounded-full h-2 w-2 bg-current"></span>
+                            </span>
+                          </button>
+                        ))}
+
+                        {/* Map HUD Legend overlaid */}
+                        <div className="absolute bottom-2.5 left-2.5 bg-black/80 border border-white/10 px-2.5 py-1 rounded text-[8px] font-mono text-slate-400">
+                          🗺️ LEONIDA LEAK GRID SCALE: 3x GTA V
+                        </div>
+                      </div>
+
+                      {/* Details output for selected map pin */}
+                      {(() => {
+                        const spot = MAP_HOTSPOTS.find(h => h.id === activeMapPin) || MAP_HOTSPOTS[0];
+                        return (
+                          <div className="bg-white/[0.02] border border-white/5 p-3 rounded-lg text-xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-brand-cyan font-black uppercase text-xs font-mono tracking-wide">{spot.name}</span>
+                              <span className={`text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
+                                spot.danger === 'Estremo' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                spot.danger === 'Alto' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                                'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              }`}>
+                                Pericolo: {spot.danger}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono mb-2">Sorgente dati: <strong className="text-yellow-400">{spot.status}</strong></div>
+                            <p className="text-slate-300 font-sans mb-1.5 leading-relaxed">{spot.description}</p>
+                            <p className="text-[11px] text-brand-pink font-mono italic">📢 {spot.rumors}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        alert(`Mappa coordinata inviata al tablet di rapina del fan club con successo!`);
+                      }}
+                      className="mt-4 w-full bg-brand-cyan/10 hover:bg-brand-cyan hover:text-black border border-brand-cyan/40 px-3 py-2 rounded text-[10px] font-mono uppercase tracking-widest text-brand-cyan transition-colors"
+                    >
+                      📍 Sincronizza Mappa con la Crew
+                    </button>
+                  </div>
+
+                  {/* ZONE 2: INTERACTIVE WEAPONS COMPACTION WHEEL */}
+                  <div className="col-span-1 lg:col-span-4 bg-black/85 border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <Crosshair className="w-4 h-4 text-brand-pink" />
+                          <h3 className="text-xs font-black uppercase text-white font-mono tracking-widest">
+                            Tactical Weaponizer
+                          </h3>
+                        </div>
+                        <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
+                          WEAPON WHEEL
+                        </span>
+                      </div>
+
+                      <p className="text-[10.5px] text-slate-400 mb-4 leading-normal">
+                        Configura l'arsenale per i colpi di Jason e Lucia. Clicca sui tipi di arma per testare balistica e precisione stimata dal codice di gioco:
+                      </p>
+
+                      {/* Radial Selector buttons looking like GTA slots */}
+                      <div className="grid grid-cols-3 gap-1.5 mb-4">
+                        {Object.keys(WEAPONS_DATA).map((slotKey) => {
+                          const wInput = WEAPONS_DATA[slotKey];
+                          return (
+                            <button
+                              key={slotKey}
+                              onClick={() => setSelectedWeaponSlot(slotKey)}
+                              className={`p-2.5 rounded border transition-all duration-300 cursor-pointer flex flex-col items-center justify-between text-center ${
+                                selectedWeaponSlot === slotKey
+                                  ? 'bg-brand-pink/20 border-brand-pink text-white shadow-md shadow-brand-pink/5'
+                                  : 'bg-black border-white/5 text-slate-500 hover:border-white/20 hover:text-slate-300'
+                              }`}
+                            >
+                              <span className="text-lg mb-1">{wInput.icon}</span>
+                              <span className="text-[8px] font-mono font-black uppercase tracking-widest leading-none truncate w-full">
+                                {slotKey.replace('_', ' ')}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Real time Weapon stats progress bars */}
+                      {(() => {
+                        const activeWeapon = WEAPONS_DATA[selectedWeaponSlot];
+                        return (
+                          <div className="bg-white/[0.02] border border-white/5 p-3 rounded-lg text-xs space-y-2.5">
+                            <div className="flex justify-between items-center border-b border-white/5 pb-1.5">
+                              <span className="font-black text-white uppercase text-xs">{activeWeapon.name}</span>
+                              <span className="text-[9px] font-mono text-brand-pink uppercase font-bold bg-brand-pink/10 px-1.5 py-0.5 rounded">STIME COMPARTI MOD</span>
+                            </div>
+
+                            {/* Damage gauge */}
+                            <div>
+                              <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-0.5 uppercase">
+                                <span>Danno Armamento</span>
+                                <span className="font-bold text-white">{activeWeapon.damage}%</span>
+                              </div>
+                              <div className="h-1.5 bg-black rounded overflow-hidden">
+                                <div className="h-full bg-brand-pink rounded" style={{ width: `${activeWeapon.damage}%` }}></div>
+                              </div>
+                            </div>
+
+                            {/* Fire Rate gauge */}
+                            <div>
+                              <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-0.5 uppercase">
+                                <span>Gittata & Distanza</span>
+                                <span className="font-bold text-white">{activeWeapon.range}%</span>
+                              </div>
+                              <div className="h-1.5 bg-black rounded overflow-hidden">
+                                <div className="h-full bg-slate-400 rounded" style={{ width: `${activeWeapon.range}%` }}></div>
+                              </div>
+                            </div>
+
+                            {/* Accuracy gauge */}
+                            <div>
+                              <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-0.5 uppercase">
+                                <span>Precisione Tiro</span>
+                                <span className="font-bold text-white">{activeWeapon.accuracy}%</span>
+                              </div>
+                              <div className="h-1.5 bg-black rounded overflow-hidden">
+                                <div className="h-full bg-brand-cyan rounded" style={{ width: `${activeWeapon.accuracy}%` }}></div>
+                              </div>
+                            </div>
+
+                            <p className="text-[10px] text-slate-400 leading-relaxed pt-1 border-t border-white/5">
+                              {activeWeapon.desc}
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <button
+                      onClick={() => alert(`Armamento per la rapina iniziale configurato! Letale.`)}
+                      className="mt-4 w-full bg-brand-pink/10 hover:bg-brand-pink hover:text-white border border-brand-pink/40 px-3 py-2 rounded text-[10px] font-mono uppercase tracking-widest text-brand-pink transition-colors"
+                    >
+                      🔥 Memorizza Loadout Attivo
+                    </button>
+                  </div>
+
+                  {/* ZONE 3: SYNDICATE MEMBER DIGITAL ID GENERATOR */}
+                  <div className="col-span-1 lg:col-span-3 bg-black/85 border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <Award className="w-4 h-4 text-brand-cyan" />
+                          <h3 className="text-xs font-black uppercase text-white font-mono tracking-widest">
+                            Syndicate Pass
+                          </h3>
+                        </div>
+                        <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
+                          CREA BADGE
+                        </span>
+                      </div>
+
+                      {/* Toggle badge details input */}
+                      <div className="space-y-2 mb-4">
+                        <div>
+                          <label className="block text-[8px] font-mono text-slate-500 uppercase tracking-wider mb-1">Nickname della Crew:</label>
+                          <input
+                            type="text"
+                            value={idNickname}
+                            onChange={(e) => setIdNickname(e.target.value)}
+                            placeholder="Inserisci alias criminologo..."
+                            maxLength={16}
+                            className="w-full bg-black/80 border border-white/10 rounded px-2.5 py-1 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-brand-pink font-mono"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[8px] font-mono text-slate-500 uppercase tracking-wider mb-1">Fazione:</label>
+                            <select
+                              value={idFaction}
+                              onChange={(e) => setIdFaction(e.target.value)}
+                              className="w-full bg-black/80 border border-white/10 rounded px-2 py-1 text-[10px] text-slate-100 focus:outline-none focus:border-brand-pink font-mono"
+                            >
+                              <option value="Vice City Syndicate">V.C. Syndicate</option>
+                              <option value="Lucia Loyalists">Lucia Loyalists</option>
+                              <option value="Leonida Outlaws">Outlaws Leonida</option>
+                              <option value="Gator Boys Faction">Gator Hunters</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[8px] font-mono text-slate-500 uppercase tracking-wider mb-1">Stile / Classe:</label>
+                            <select
+                              value={idRank}
+                              onChange={(e) => setIdRank(e.target.value)}
+                              className="w-full bg-black/80 border border-white/10 rounded px-2 py-1 text-[10px] text-slate-100 focus:outline-none focus:border-brand-pink font-mono"
+                            >
+                              <option value="Street Legend">Capo di Vice</option>
+                              <option value="Criminologo di Quartiere">Esploratore</option>
+                              <option value="Socio dei Cartelli">Socio Cartello</option>
+                              <option value="Pilota di Evasione">Fuga Driver</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Avatar selector bar */}
+                        <div>
+                          <label className="block text-[8px] font-mono text-slate-500 uppercase tracking-wider mb-1">Seleziona Ritratto Avatar:</label>
+                          <div className="flex gap-2 justify-between">
+                            {[
+                              { id: 'lucia', name: '👩 Lucia', img: luciaArtworkImg },
+                              { id: 'jason', name: '🧔 Jason', img: bannerImg },
+                              { id: 'rig', name: '🖥 Setup', img: gamingSetupImg },
+                              { id: 'map', name: '🗺 Mappa', img: mapLeakImg }
+                            ].map((avatarItem) => (
+                              <button
+                                key={avatarItem.id}
+                                onClick={() => setChosenAvatar(avatarItem.id)}
+                                className={`text-[10px] px-1.5 py-1 rounded border transition uppercase tracking-widest font-mono flex-grow ${
+                                  chosenAvatar === avatarItem.id 
+                                    ? 'bg-brand-cyan/25 border-brand-cyan text-brand-cyan' 
+                                    : 'bg-black border-white/5 text-slate-400'
+                                }`}
+                              >
+                                {avatarItem.name.split(' ')[0]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Glowing output visual pass widget */}
+                      <div className="bg-gradient-to-br from-[#12111d] to-[#040409] border-2 border-brand-cyan rounded-xl p-3.5 relative overflow-hidden shadow-lg shadow-brand-cyan/5">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-brand-cyan/5 rounded-full blur-xl pointer-events-none"></div>
+                        <div className="flex items-center gap-2.5">
+                          {/* Mini avatar frame inside passport */}
+                          <div className="w-11 h-11 rounded-lg overflow-hidden border border-brand-cyan bg-slate-900 flex-shrink-0 relative">
+                            <img
+                              src={
+                                chosenAvatar === 'lucia' ? luciaArtworkImg :
+                                chosenAvatar === 'jason' ? bannerImg :
+                                chosenAvatar === 'rig' ? gamingSetupImg :
+                                mapLeakImg
+                              }
+                              alt="Chosen badge avatar preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+
+                          <div className="min-w-0 flex-grow">
+                            <div className="text-[7.5px] font-mono uppercase text-brand-pink tracking-widest font-bold">STATE OF LEONIDA SYNDICATE</div>
+                            <div className="text-xs font-black uppercase text-white truncate font-mono tracking-wide">{idNickname || 'ANONIMO'}</div>
+                            <div className="text-[7.5px] font-mono text-slate-400 uppercase truncate">
+                              FAZIONE: <strong className="text-brand-cyan">{idFaction}</strong>
+                            </div>
+                            <div className="text-[7.5px] font-mono text-slate-400 uppercase truncate">
+                              RANGO: <strong className="text-slate-200">{idRank}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Barcode and watermark */}
+                        <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+                          <div className="font-mono text-[7px] text-slate-500 uppercase">
+                            CREW ENTRY ID: #{1986 + (idNickname ? idNickname.length * 379 : 1234)}
+                          </div>
+                          <div className="font-mono font-black text-brand-pink uppercase tracking-widest text-[8px] bg-white/5 px-2 py-0.5 rounded">
+                            VICEVI PASS
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const code = `VCN-${(idNickname || 'ANON').toUpperCase()}-${(1986 + (idNickname ? idNickname.length * 379 : 1234))}`;
+                        copyToClipboard(code, 'Codice Passaporto');
+                        alert(`Badge Criminologo Generato! Il codice copia-incolla univoco è: ${code}`);
+                      }}
+                      className="mt-4 w-full bg-brand-cyan hover:bg-white text-black text-[10px] font-black py-2 rounded transition uppercase tracking-widest -skew-x-12 cursor-pointer text-center"
+                    >
+                      💳 GENERA & COPIA BADGE CREW
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
             {/* SEPARATE BLOG VIEWER SCREEN (IF POST IS SELECTED) */}
             {selectedPost ? (
               <div className="bg-brand-gray/90 rounded-2xl border border-white/10 overflow-hidden shadow-2xl p-6 sm:p-10 backdrop-blur-md">
@@ -994,7 +1531,7 @@ export default function App() {
 
                     <div className="mb-8 rounded-xl overflow-hidden max-h-[420px] border border-white/10 shadow-lg">
                       <img
-                        src={selectedPost.imageUrl}
+                        src={resolveImg(selectedPost.imageUrl)}
                         alt={selectedPost.title}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover"
@@ -1175,7 +1712,7 @@ export default function App() {
                           <div>
                             <div className="h-48 relative border-b border-white/5">
                               <img
-                                src={post.imageUrl}
+                                src={resolveImg(post.imageUrl)}
                                 alt={post.title}
                                 referrerPolicy="no-referrer"
                                 className="w-full h-full object-cover"
@@ -1423,57 +1960,70 @@ export default function App() {
                 {eventsList.map((evt) => (
                   <div
                     key={evt.id}
-                    className="bg-brand-gray border border-white/10 rounded-xl p-5 sm:p-6 hover:border-brand-pink/30 transition-all duration-300"
+                    className="bg-brand-gray border border-white/10 rounded-xl overflow-hidden hover:border-brand-pink/30 transition-all duration-300 flex flex-col md:flex-row gap-6 p-5 sm:p-6"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                      <span className="px-2.5 py-1 bg-black border border-white/5 text-brand-pink font-mono text-[9px] font-bold rounded uppercase -skew-x-12 tracking-widest">
-                        PIATTAFORMA: {evt.platform}
-                      </span>
-                      <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-mono">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        <span>{evt.date} • {evt.time}</span>
+                    {evt.bannerUrl ? (
+                      <div className="w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-slate-900 border border-white/5 shadow-inner">
+                        <img
+                          src={resolveImg(evt.bannerUrl)}
+                          alt={evt.title}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    </div>
-
-                    <h4 className="text-lg font-black text-white hover:text-brand-pink transition mb-2">
-                      {evt.title}
-                    </h4>
-
-                    <p className="text-slate-400 text-xs leading-relaxed mb-4">
-                      {evt.description}
-                    </p>
-
-                    <div className="border-t border-white/5 pt-4 flex flex-wrap items-center justify-between gap-4">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-500 font-mono uppercase">Organizzatore</span>
-                        <span className="text-xs text-slate-200 font-bold">{evt.organizer}</span>
-                      </div>
-
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <div className="text-xs font-bold text-brand-cyan font-mono">{evt.attendeesCount} Partecipanti</div>
-                          <div className="text-[9px] text-slate-500 uppercase">Pronti per il Colpo</div>
+                    ) : null}
+                    <div className="flex-grow flex flex-col justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <span className="px-2.5 py-1 bg-black border border-white/5 text-brand-pink font-mono text-[9px] font-bold rounded uppercase -skew-x-12 tracking-widest">
+                            PIATTAFORMA: {evt.platform}
+                          </span>
+                          <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-mono">
+                            <Clock className="w-3.5 h-3.5 text-slate-500" />
+                            <span>{evt.date} • {evt.time}</span>
+                          </div>
                         </div>
 
-                        {evt.location.startsWith('http') ? (
-                          <a
-                            href={evt.location}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-black hover:bg-white/5 text-white border border-white/10 px-3.5 py-2 rounded text-[10px] font-mono uppercase tracking-wider -skew-x-12"
-                          >
-                            <span>Link Portale</span>
-                            <ExternalLink className="w-3.5 h-3.5 inline-block ml-1" />
-                          </a>
-                        ) : (
-                          <button
-                            onClick={() => copyToClipboard(evt.location, 'Indirizzo del Raduno')}
-                            className="bg-black hover:bg-white/5 text-white border border-white/10 px-3.5 py-2 rounded text-[10px] font-mono uppercase tracking-wider -skew-x-12"
-                          >
-                            <span>Copia Luogo</span>
-                            <Copy className="w-3.5 h-3.5 inline-block ml-1" />
-                          </button>
-                        )}
+                        <h4 className="text-lg font-black text-white hover:text-brand-pink transition mb-2">
+                          {evt.title}
+                        </h4>
+
+                        <p className="text-slate-400 text-xs leading-relaxed mb-4">
+                          {evt.description}
+                        </p>
+                      </div>
+
+                      <div className="border-t border-white/5 pt-4 flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-slate-500 font-mono uppercase">Organizzatore</span>
+                          <span className="text-xs text-slate-200 font-bold">{evt.organizer}</span>
+                        </div>
+
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-brand-cyan font-mono">{evt.attendeesCount} Partecipanti</div>
+                            <div className="text-[9px] text-slate-500 uppercase">Pronti per il Colpo</div>
+                          </div>
+
+                          {evt.location.startsWith('http') ? (
+                            <a
+                              href={evt.location}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-black hover:bg-white/5 text-white border border-white/10 px-3.5 py-2 rounded text-[10px] font-mono uppercase tracking-wider -skew-x-12"
+                            >
+                              <span>Link Portale</span>
+                              <ExternalLink className="w-3.5 h-3.5 inline-block ml-1" />
+                            </a>
+                          ) : (
+                            <button
+                              onClick={() => copyToClipboard(evt.location, 'Indirizzo del Raduno')}
+                              className="bg-black hover:bg-white/5 text-white border border-white/10 px-3.5 py-2 rounded text-[10px] font-mono uppercase tracking-wider -skew-x-12 cursor-pointer"
+                            >
+                              <span>Copia Luogo</span>
+                              <Copy className="w-3.5 h-3.5 inline-block ml-1" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1597,135 +2147,549 @@ export default function App() {
         {/* ==================== TAB 4: CREW & TEORIE ==================== */}
         {activeTab === 'community' && (
           <div>
-            <div className="relative mb-12 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-gradient-to-r from-brand-gray to-black p-6 sm:p-10">
+            {/* HERO BAR */}
+            <div className="relative mb-8 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-gradient-to-r from-brand-gray to-black p-6 sm:p-10">
               <h2 className="text-3xl font-black text-white font-space leading-tight mb-2">
-                Forum delle <span className="text-brand-pink">Teorie Criminali</span> & Speculazioni Leonida
+                Forum della <span className="text-brand-pink">Radio Crew</span> & Speculazioni Leonida
               </h2>
-              <p className="text-slate-300 text-xs max-w-3xl leading-relaxed font-sans">
-                Chi comanda davvero a Vice City? Lucia tradirà Jason o sono vittime del famigerato "Sindacato"? Scegli la tua fazione ed esprimi la tua opinione. I post più upvotati vengono discussi nelle puntate podcast dei nostri affiliati.
+              <p className="text-slate-300 text-xs max-w-3xl leading-relaxed font-sans font-medium">
+                Siamo l'epicentro della passione italiana per Rockstar Games. Esplora le cospirazioni su GTA VI, sblocca i cheat codes storici o vota i misteri metropolitani più folli di Liberty City e Vice City!
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
-              {/* CURRENT THEORIES LIST */}
-              <div className="lg:col-span-8 space-y-4">
-                <h3 className="text-sm font-black text-white uppercase font-space tracking-widest border-l-4 border-brand-pink pl-3 mb-6">
-                  Le Teorie Più Hot della Settimana
-                </h3>
+            {/* NESTED COMMUNITY NAVIGATION */}
+            <div className="flex flex-wrap gap-2.5 mb-8 border-b border-white/10 pb-4">
+              <button
+                onClick={() => setCommunitySubTab('theories')}
+                className={`px-4 py-2.5 text-xs font-black uppercase tracking-widest transition duration-200 rounded -skew-x-6 cursor-pointer ${
+                  communitySubTab === 'theories'
+                    ? 'bg-brand-pink text-white shadow-lg'
+                    : 'bg-brand-gray border border-white/10 text-slate-400 hover:text-white'
+                }`}
+              >
+                💬 Teorie & Cospirazioni ({theories.length})
+              </button>
+              <button
+                onClick={() => setCommunitySubTab('cheats')}
+                className={`px-4 py-2.5 text-xs font-black uppercase tracking-widest transition duration-200 rounded -skew-x-6 cursor-pointer ${
+                  communitySubTab === 'cheats'
+                    ? 'bg-brand-pink text-white shadow-lg'
+                    : 'bg-brand-gray border border-white/10 text-slate-400 hover:text-white'
+                }`}
+              >
+                🎮 Codici Trucchi Storici
+              </button>
+              <button
+                onClick={() => setCommunitySubTab('myths')}
+                className={`px-4 py-2.5 text-xs font-black uppercase tracking-widest transition duration-200 rounded -skew-x-6 cursor-pointer ${
+                  communitySubTab === 'myths'
+                    ? 'bg-brand-pink text-white shadow-lg'
+                    : 'bg-brand-gray border border-white/10 text-slate-400 hover:text-white'
+                }`}
+              >
+                👻 Misteri & Leggende Metropolitane ({mythsList.length})
+              </button>
+              <button
+                onClick={() => setCommunitySubTab('livechat')}
+                className={`px-4 py-2.5 text-xs font-black uppercase tracking-widest transition duration-200 rounded -skew-x-6 cursor-pointer ${
+                  communitySubTab === 'livechat'
+                    ? 'bg-brand-cyan text-black font-extrabold shadow-lg shadow-brand-cyan/20'
+                    : 'bg-brand-gray border border-white/10 text-slate-400 hover:text-white'
+                }`}
+              >
+                📻 Crew Chat Sotterranea Live
+              </button>
+            </div>
 
-                {theories.map((theory) => {
-                  const hasVoted = votedTheories[theory.id];
-                  return (
-                    <div
-                      key={theory.id}
-                      className="bg-brand-gray border border-white/10 rounded-xl p-5 hover:border-brand-pink/20 transition-all duration-300"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 border-b border-white/5 pb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="w-5 h-5 rounded-full bg-black flex items-center justify-center border border-white/15">
-                            <User className="w-3.5 h-3.5 text-brand-pink" />
-                          </span>
-                          <span className="text-xs font-semibold text-white">{theory.username}</span>
-                          <span className="text-[10px] font-mono text-brand-cyan bg-brand-cyan/10 border border-brand-cyan/25 px-2 py-0.5 rounded uppercase">
-                            frazione: {theory.faction}
-                          </span>
+            {/* SUB-TAB 1: FORUM THEORIES */}
+            {communitySubTab === 'theories' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12 animate-fade-in">
+                {/* CURRENT THEORIES LIST */}
+                <div className="lg:col-span-8 space-y-4">
+                  <h3 className="text-sm font-black text-white uppercase font-space tracking-widest border-l-4 border-brand-pink pl-3 mb-6">
+                    Migliori Speculazioni Sulla Leonida State
+                  </h3>
+
+                  {theories.map((theory) => {
+                    const hasVoted = votedTheories[theory.id];
+                    return (
+                      <div
+                        key={theory.id}
+                        className="bg-brand-gray border border-white/10 rounded-xl p-5 hover:border-brand-pink/20 transition-all duration-300 animate-fade-in"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 border-b border-white/5 pb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="w-5 h-5 rounded-full bg-black flex items-center justify-center border border-white/15">
+                              <User className="w-3.5 h-3.5 text-brand-pink" />
+                            </span>
+                            <span className="text-xs font-semibold text-white">{theory.username}</span>
+                            <span className="text-[10px] font-mono text-brand-cyan bg-brand-cyan/10 border border-brand-cyan/25 px-2 py-0.5 rounded uppercase">
+                              frazione: {theory.faction}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono">{theory.timestamp}</span>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono">{theory.timestamp}</span>
+
+                        <h4 className="text-base font-black text-slate-100 mb-2">
+                          {theory.title}
+                        </h4>
+
+                        <p className="text-slate-300 text-xs leading-relaxed mb-4 font-sans">
+                          {theory.content}
+                        </p>
+
+                        <div className="flex items-center justify-end space-x-4 border-t border-white/5 pt-3">
+                          <button
+                            onClick={() => handleUpvoteTheory(theory.id)}
+                            className={`flex items-center space-x-1.5 text-xs transition duration-200 cursor-pointer ${
+                              hasVoted ? 'text-brand-pink font-bold animate-pulse' : 'text-slate-400 hover:text-brand-pink'
+                            }`}
+                          >
+                            <ThumbsUp className="w-3.5 h-3.5 text-brand-pink" />
+                            <span className="font-mono text-[11px] uppercase tracking-wider font-bold">{theory.upvotes} Sostienilo</span>
+                          </button>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
 
-                      <h4 className="text-base font-black text-slate-100 mb-2">
-                        {theory.title}
-                      </h4>
+                {/* POST A NEW THEORY FORM CONTAINER */}
+                <div className="lg:col-span-4 bg-brand-gray border border-white/10 rounded-xl p-6 shadow-md relative">
+                  <h3 className="text-xs font-black text-white font-space mb-2 flex items-center gap-1.5 uppercase tracking-widest">
+                    <PlusCircle className="w-4 h-4 text-brand-pink" /> Condividi una Teoria
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mb-6 font-sans leading-normal">
+                    Pensi di aver scovato un dettaglio segreto nel Trailer o nei database di Grand Theft Auto VI? Scrivilo qui per ricevere upvotes immediati dalla nostra community!
+                  </p>
 
-                      <p className="text-slate-300 text-xs leading-relaxed mb-4 font-sans">
-                        {theory.content}
-                      </p>
-
-                      <div className="flex items-center justify-end space-x-4 border-t border-white/5 pt-3">
-                        <button
-                          onClick={() => handleUpvoteTheory(theory.id)}
-                          className={`flex items-center space-x-1.5 text-xs transition duration-200 cursor-pointer ${
-                            hasVoted ? 'text-brand-pink' : 'text-slate-400 hover:text-brand-pink'
-                          }`}
-                        >
-                          <ThumbsUp className="w-4 h-4 text-brand-pink" />
-                          <span className="font-mono text-[11px] uppercase tracking-wider">{theory.upvotes} Sostienilo</span>
-                        </button>
-                      </div>
+                  <form onSubmit={handleCreateTheory} className="space-y-4">
+                    <div>
+                      <label className="block text-slate-500 text-[10px] font-mono uppercase mb-1">Nome Utente Criminologo</label>
+                      <input
+                        type="text"
+                        value={theoryUsername}
+                        onChange={(e) => setTheoryUsername(e.target.value)}
+                        placeholder="es. TommyFidelity"
+                        className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 placeholder-slate-705 focus:outline-none focus:border-brand-pink font-mono"
+                      />
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* POST A NEW THEORY FORM CONTAINER */}
-              <div className="lg:col-span-4 bg-brand-gray border border-white/10 rounded-xl p-6 shadow-md relative">
-                <h3 className="text-xs font-black text-white font-space mb-2 flex items-center gap-1.5 uppercase tracking-widest">
-                  <MessageSquare className="w-4 h-4 text-brand-pink" /> Condividi una Teoria
-                </h3>
-                <p className="text-[11px] text-slate-400 mb-6 font-sans">
-                  Pensi di aver scovato un dettaglio segreto nel Trailer di Grand Theft Auto VI? Scrivilo qui per ricevere upvotes immediati dalla crew!
-                </p>
+                    <div>
+                      <label className="block text-slate-500 text-[10px] font-mono uppercase mb-1">Fazione Occupazionale</label>
+                      <select
+                        value={theoryFaction}
+                        onChange={(e) => setTheoryFaction(e.target.value as any)}
+                        className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-brand-cyan focus:outline-none focus:border-brand-pink font-mono"
+                      >
+                        <option value="Lucia Loyalist">Sostenitori di Lucia (Lucia Loyalists)</option>
+                        <option value="Jason Believer">Fiducia Cieca in Jason (Jason Believers)</option>
+                        <option value="Vice City Syndicate">Cartello di Vice (VC Syndicate)</option>
+                        <option value="Leonida Police">Forze di Polizia Leonida</option>
+                        <option value="No-Affiliation">Criminologo Esterno</option>
+                      </select>
+                    </div>
 
-                <form onSubmit={handleCreateTheory} className="space-y-4">
-                  <div>
-                    <label className="block text-slate-500 text-[10px] font-mono uppercase mb-1">Nome Utente Criminologo</label>
-                    <input
-                      type="text"
-                      value={theoryUsername}
-                      onChange={(e) => setTheoryUsername(e.target.value)}
-                      placeholder="es. TommyFidelity"
-                      className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-brand-pink font-mono"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-slate-550 text-[10px] font-mono uppercase mb-1">Titolo dell'Ipotesi *</label>
+                      <input
+                        type="text"
+                        required
+                        value={theoryTitle}
+                        onChange={(e) => setTheoryTitle(e.target.value)}
+                        placeholder="es. Rapina di Diner speculazione"
+                        className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 placeholder-slate-705 focus:outline-none focus:border-brand-pink font-mono"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-slate-500 text-[10px] font-mono uppercase mb-1">Scegli la Tua Fazione</label>
-                    <select
-                      value={theoryFaction}
-                      onChange={(e) => setTheoryFaction(e.target.value as any)}
-                      className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-brand-pink font-mono"
+                    <div>
+                      <label className="block text-slate-530 text-[10px] font-mono uppercase mb-1">Spiegazione della Teoria *</label>
+                      <textarea
+                        required
+                        value={theoryContent}
+                        onChange={(e) => setTheoryContent(e.target.value)}
+                        rows={4}
+                        placeholder="Fornisci prove fotografiche o temporali del trailer..."
+                        className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 placeholder-slate-705 focus:outline-none focus:border-brand-pink font-mono"
+                      ></textarea>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-brand-pink hover:bg-brand-pink/90 text-white text-[11px] font-black py-3 rounded transition uppercase tracking-widest -skew-x-12 cursor-pointer"
                     >
-                      <option value="Lucia Loyalist">Sostenitori di Lucia (Lucia Loyalists)</option>
-                      <option value="Jason Believer">Fiducia Cieca in Jason (Jason Believers)</option>
-                      <option value="Vice City Syndicate">Cartello di Vice (VC Syndicate)</option>
-                      <option value="Leonida Police">Forze di Polizia Leonida</option>
-                      <option value="No-Affiliation">Criminologo Esterno</option>
-                    </select>
-                  </div>
+                      Pubblica Nel Forum →
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
 
+            {/* SUB-TAB 2: INTERACTIVE CHEATS VAULT */}
+            {communitySubTab === 'cheats' && (
+              <div className="bg-brand-gray border border-white/10 rounded-2xl p-6 sm:p-8 animate-fade-in text-slate-200">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-6 border-b border-white/10">
                   <div>
-                    <label className="block text-slate-500 text-[10px] font-mono uppercase mb-1">Titolo dell'Ipotesi *</label>
-                    <input
-                      type="text"
-                      required
-                      value={theoryTitle}
-                      onChange={(e) => setTheoryTitle(e.target.value)}
-                      placeholder="es. Rapina di Diner speculazione"
-                      className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-brand-pink font-mono"
-                    />
+                    <h3 className="text-xl font-black text-white font-space uppercase tracking-wide flex items-center gap-2">
+                      <Award className="w-5 h-5 text-brand-pink animate-pulse" /> Caveau dei Codici Trucchi
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 font-sans">
+                      Seleziona il capitolo di Grand Theft Auto e la tua piattaforma preferita per sbloccare le combinazioni storiche e i leak speculativi.
+                    </p>
                   </div>
 
+                  {/* PLATFORM SELECTOR */}
+                  <div className="flex bg-black p-1 rounded-lg border border-white/5">
+                    <button
+                      onClick={() => setCheatPlatform('ps')}
+                      className={`px-3 py-1.5 text-[10px] font-mono uppercase font-bold tracking-wider rounded transition-all duration-200 cursor-pointer ${
+                        cheatPlatform === 'ps' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      PlayStation
+                    </button>
+                    <button
+                      onClick={() => setCheatPlatform('xbox')}
+                      className={`px-3 py-1.5 text-[10px] font-mono uppercase font-bold tracking-wider rounded transition-all duration-200 cursor-pointer ${
+                        cheatPlatform === 'xbox' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Xbox
+                    </button>
+                    <button
+                      onClick={() => setCheatPlatform('pc')}
+                      className={`px-3 py-1.5 text-[10px] font-mono uppercase font-bold tracking-wider rounded transition-all duration-200 cursor-pointer ${
+                        cheatPlatform === 'pc' ? 'bg-brand-pink text-white font-black' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      PC / Cellulare
+                    </button>
+                  </div>
+                </div>
+
+                {/* GAME TOGGLE CHEAT CARDS */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+                  {[
+                    { id: 'gta6', name: 'GTA VI (Attesi/Speculativi)', desc: 'Nuove meccaniche e codici stimati' },
+                    { id: 'gta5', name: 'GTA V (Ufficiali completi)', desc: 'I classici di Los Santos' },
+                    { id: 'gta4', name: 'GTA IV (Nostalgici rari)', desc: 'Il capolavoro di Liberty City' }
+                  ].map((game) => (
+                    <button
+                      key={game.id}
+                      onClick={() => setCheatGame(game.id as any)}
+                      className={`p-4 rounded-xl text-left border transition-all duration-300 cursor-pointer ${
+                        cheatGame === game.id
+                          ? 'bg-black border-brand-cyan shadow-md shadow-brand-cyan/5'
+                          : 'bg-black/40 border-white/5 hover:border-white/10 hover:bg-black/60'
+                      }`}
+                    >
+                      <div className="text-xs font-black uppercase text-white font-space">{game.name}</div>
+                      <div className="text-[10px] text-slate-500 font-sans mt-0.5 leading-normal">{game.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* CHEATS DESCRIPTIVE HUB */}
+                <div className="space-y-4">
+                  {(cheatGame === 'gta6' ? [
+                    {
+                      name: 'Super Salto della Leonida State',
+                      desc: 'Consente salti verticali di oltre 20 metri per scalare i tetti di Vice City.',
+                      ps: ['LEFT', 'LEFT', 'TRIANGLE', 'TRIANGLE', 'RIGHT', 'RIGHT', 'LEFT', 'RIGHT', 'SQUARE', 'R1', 'R2'],
+                      xbox: ['LEFT', 'LEFT', 'Y', 'Y', 'RIGHT', 'RIGHT', 'LEFT', 'RIGHT', 'X', 'RB', 'RT'],
+                      pc: 'HOPTOIT'
+                    },
+                    {
+                      name: 'Attiva Gravità Lunare gravitazionale',
+                      desc: 'Altera le leggi fisiche riducendo il peso delle auto durante le rampe.',
+                      ps: ['LEFT', 'LEFT', 'L1', 'R1', 'L1', 'RIGHT', 'LEFT', 'L1', 'LEFT'],
+                      xbox: ['LEFT', 'LEFT', 'LB', 'RB', 'LB', 'RIGHT', 'LEFT', 'LB', 'LEFT'],
+                      pc: 'MOONGRAV'
+                    },
+                    {
+                      name: 'Wanted Level Down (Bypass di Polizia)',
+                      desc: 'Azzera istantaneamente le stelle di sospetto delle pattuglie Leonida.',
+                      ps: ['R1', 'R1', 'CIRCLE', 'R2', 'RIGHT', 'LEFT', 'RIGHT', 'LEFT', 'RIGHT', 'LEFT'],
+                      xbox: ['RB', 'RB', 'B', 'RT', 'RIGHT', 'LEFT', 'RIGHT', 'LEFT', 'RIGHT', 'LEFT'],
+                      pc: 'TURNDOWN'
+                    }
+                  ] : cheatGame === 'gta5' ? [
+                    {
+                      name: 'Invincibilità Temporanea (5 Minuti)',
+                      desc: 'Diventa immortale a proiettili, esplosioni e morsi di coccodrillo.',
+                      ps: ['RIGHT', 'X', 'RIGHT', 'LEFT', 'RIGHT', 'R1', 'RIGHT', 'LEFT', 'X', 'TRIANGLE'],
+                      xbox: ['RIGHT', 'A', 'RIGHT', 'LEFT', 'RIGHT', 'RB', 'RIGHT', 'LEFT', 'A', 'Y'],
+                      pc: 'PAINKILLER'
+                    },
+                    {
+                      name: 'Ricarica Abilità Speciale personaggio',
+                      desc: 'Riempi la barra di abilità di rallentamento guida o assorbimento danni.',
+                      ps: ['X', 'X', 'SQUARE', 'R1', 'L1', 'X', 'RIGHT', 'LEFT', 'X'],
+                      xbox: ['A', 'A', 'X', 'RB', 'LB', 'A', 'RIGHT', 'LEFT', 'A'],
+                      pc: 'POWERUP'
+                    },
+                    {
+                      name: 'Fornitura Completa Armi Militaresche',
+                      desc: 'Aggiunge istantaneamente Mitragliatore, Lanciarazzi, Cecchino e Granate.',
+                      ps: ['TRIANGLE', 'R2', 'LEFT', 'L1', 'X', 'RIGHT', 'TRIANGLE', 'DOWN', 'SQUARE', 'L1', 'L1', 'L1'],
+                      xbox: ['Y', 'RT', 'LEFT', 'LB', 'A', 'RIGHT', 'Y', 'DOWN', 'X', 'LB', 'LB', 'LB'],
+                      pc: 'TOOLUP'
+                    }
+                  ] : [
+                    {
+                      name: 'Salute & Armatura Completa Niko',
+                      desc: 'Cura Niko al 100% e aggiunge un giubbotto antiproiettile di livello SWAT.',
+                      ps: ['362-555-0100', '(Componi sul telefono)'],
+                      xbox: ['362-555-0100', '(Componi sul telefono)'],
+                      pc: '362-555-0100'
+                    },
+                    {
+                      name: 'Generatore Auto Sportiva "Infernus"',
+                      desc: 'Genera un bolide Infernus giallo fiammante direttamente davanti a te.',
+                      ps: ['227-555-0147', '(Componi sul telefono)'],
+                      xbox: ['227-555-0147', '(Componi sul telefono)'],
+                      pc: '227-555-0147'
+                    },
+                    {
+                      name: 'Cambia Condizioni Meteo',
+                      desc: 'Scorre tra pioggia, nebbia fitta, sole accecante o cielo grigio di Liberty City.',
+                      ps: ['468-555-0100', '(Componi sul telefono)'],
+                      xbox: ['468-555-0100', '(Componi sul telefono)'],
+                      pc: '468-555-0100'
+                    }
+                  ]).map((cheat, idx) => {
+                    const combination = cheatPlatform === 'ps' ? cheat.ps : cheatPlatform === 'xbox' ? cheat.xbox : cheat.pc;
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-black/60 border border-white/5 p-5 rounded-xl hover:border-brand-pink/25 transition duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="max-w-md">
+                          <h4 className="text-sm font-black text-white font-space uppercase">
+                            ⚙️ {cheat.name}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 mt-1 leading-normal font-sans">
+                            {cheat.desc}
+                          </p>
+                        </div>
+
+                        {/* RENDER DYNAMIC BUTTON BADGES */}
+                        <div className="flex flex-wrap gap-1.5 items-center justify-start sm:justify-end">
+                          {Array.isArray(combination) ? (
+                            combination.map((btn, bidx) => {
+                              let bgStyle = 'bg-slate-800 text-slate-100 border-slate-700';
+                              if (btn === 'R1' || btn === 'R2' || btn === 'RB' || btn === 'RT') {
+                                bgStyle = 'bg-brand-pink text-white border-brand-pink/30';
+                              } else if (btn === 'L1' || btn === 'L2' || btn === 'LB' || btn === 'LT') {
+                                bgStyle = 'bg-brand-cyan text-black border-brand-cyan/30 border-none';
+                              } else if (btn === 'X' || btn === 'CIRCLE' || btn === 'TRIANGLE' || btn === 'SQUARE' || btn === 'Y' || btn === 'A' || btn === 'B') {
+                                bgStyle = 'bg-indigo-900 border-indigo-700 text-slate-100';
+                              }
+                              return (
+                                <span
+                                  key={bidx}
+                                  className={`px-2 py-1 border rounded text-[9px] font-mono tracking-tighter uppercase font-bold text-center min-w-[28px] ${bgStyle}`}
+                                >
+                                  {btn}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span className="bg-amber-950/45 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-bold py-1 px-3.5 rounded uppercase tracking-widest animate-pulse shadow-inner">
+                              {combination}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: MYSTERIES & LANDMARKS TRACKER */}
+            {communitySubTab === 'myths' && (
+              <div className="bg-brand-gray border border-white/10 rounded-2xl p-6 sm:p-8 animate-fade-in text-slate-200">
+                <div className="mb-8 pb-6 border-b border-white/10">
+                  <h3 className="text-xl font-black text-white font-space uppercase tracking-wide flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-yellow-405 text-yellow-400 animate-bounce" /> Misteri & Caccia all'Easter Egg
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 font-sans">
+                    Le leggende più oscure e misteriose firmate Rockstar Games. Vota e unisciti ai criminologi per decretare l'autenticità dei rumor!
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {mythsList.map((myth, mIdx) => {
+                    const totalVotes = myth.confirmedVotes + myth.mythVotes;
+                    const confirmedPct = totalVotes > 0 ? Math.round((myth.confirmedVotes / totalVotes) * 100) : 50;
+                    
+                    return (
+                      <div
+                        key={myth.id}
+                        className="bg-black/60 border border-white/5 rounded-xl p-5 hover:border-brand-pink/20 transition duration-300 flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-[9px] font-mono font-bold uppercase py-0.5 px-2 bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 rounded">
+                              {myth.game}
+                            </span>
+                            <span className="text-[9px] font-mono text-slate-500 font-black uppercase">
+                              STAT: {myth.status}
+                            </span>
+                          </div>
+
+                          <h4 className="text-base font-black text-slate-100 mb-2 leading-snug font-space">
+                            👁️ {myth.title}
+                          </h4>
+
+                          <p className="text-xs text-slate-400 leading-relaxed font-sans mb-6">
+                            {myth.description}
+                          </p>
+                        </div>
+
+                        <div>
+                          {/* CONSENSUS PROGRESS BAR */}
+                          <div className="mb-4">
+                            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 font-semibold mb-1">
+                              <span className="text-emerald-400 font-bold">VERO ({confirmedPct}%)</span>
+                              <span className="text-brand-pink font-bold">BUFALA ({100 - confirmedPct}%)</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex">
+                              <div
+                                style={{ width: `${confirmedPct}%` }}
+                                className="bg-emerald-500 h-full transition-all duration-500"
+                              ></div>
+                              <div
+                                style={{ width: `${100 - confirmedPct}%` }}
+                                className="bg-brand-pink h-full transition-all duration-500"
+                              ></div>
+                            </div>
+                            <div className="text-[8px] font-mono text-slate-500 uppercase mt-1 text-right">
+                              VOTI COMMUNITY: {totalVotes} SONDAGGI
+                            </div>
+                          </div>
+
+                          {/* ACTION BUTTONS */}
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <button
+                              onClick={() => {
+                                const updated = [...mythsList];
+                                updated[mIdx].confirmedVotes += 1;
+                                setMythsList(updated);
+                              }}
+                              className="px-3 py-2 bg-emerald-950/30 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black hover:border-emerald-500 text-emerald-400 rounded text-[10px] font-mono uppercase font-black transition cursor-pointer text-center"
+                            >
+                              👍 VERA LEGGENDA
+                            </button>
+                            <button
+                              onClick={() => {
+                                const updated = [...mythsList];
+                                updated[mIdx].mythVotes += 1;
+                                setMythsList(updated);
+                              }}
+                              className="px-3 py-2 bg-brand-pink/10 border border-brand-pink/20 hover:bg-brand-pink hover:text-white hover:border-brand-pink text-brand-pink rounded text-[10px] font-mono uppercase font-black transition cursor-pointer text-center"
+                            >
+                              👎 SOLO BUFALA
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 4: UNDERGROUND LIVE CHAT */}
+            {communitySubTab === 'livechat' && (
+              <div className="bg-brand-gray border border-white/10 rounded-2xl p-6 animate-fade-in text-slate-200">
+                <div className="mb-4 pb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <label className="block text-slate-500 text-[10px] font-mono uppercase mb-1">Spiegazione della Teoria *</label>
-                    <textarea
-                      required
-                      value={theoryContent}
-                      onChange={(e) => setTheoryContent(e.target.value)}
-                      rows={4}
-                      placeholder="Fornisci prove fotografiche o temporali del trailer..."
-                      className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-brand-pink font-mono"
-                    ></textarea>
+                    <h3 className="text-xl font-black text-white font-space uppercase tracking-wide flex items-center gap-2">
+                      <Radio className="w-5 h-5 text-brand-cyan animate-pulse" /> Crew Chat Radio Sotterranea
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 font-sans">
+                      Connessione crittografata al feed radio degli appassionati di GTA in diretta.
+                    </p>
                   </div>
+                  <span className="self-start sm:self-auto px-2.5 py-0.5 border border-brand-cyan/20 bg-brand-cyan/10 text-brand-cyan font-mono text-[9px] font-black uppercase rounded animate-pulse">
+                    🟢 ONLINE • CANALE RADIO CRITTOGRAFATO
+                  </span>
+                </div>
 
+                {/* SCROLLABLE MIN-CHAT AREA */}
+                <div className="bg-black/80 rounded-xl p-4 h-96 overflow-y-auto mb-4 border border-white/5 space-y-3.5 flex flex-col-reverse">
+                  {[...chatMessages].reverse().map((msg) => {
+                    let factionBadge = 'bg-slate-800 text-slate-300';
+                    if (msg.faction === 'Lucia Loyalist') factionBadge = 'bg-brand-pink/15 text-brand-pink border border-brand-pink/20';
+                    else if (msg.faction === 'Jason Believer') factionBadge = 'bg-amber-900/40 text-amber-400 border border-amber-500/20';
+                    else if (msg.faction === 'Vice City Syndicate') factionBadge = 'bg-brand-cyan/15 text-brand-cyan border border-brand-cyan/25';
+                    else if (msg.faction === 'Leonida Police') factionBadge = 'bg-blue-950/40 text-blue-405 text-blue-400 border border-blue-500/20';
+
+                    return (
+                      <div key={msg.id} className="text-xs flex items-start gap-2.5 hover:bg-white/5 p-1 px-1.5 rounded transition">
+                        <span className="text-slate-550 text-slate-500 font-mono select-none text-[10px] mt-0.5 font-bold">[{msg.time}]</span>
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-white font-black hover:underline cursor-pointer">{msg.user}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-mono tracking-tighter uppercase font-extrabold ${factionBadge}`}>
+                              {msg.faction}
+                            </span>
+                          </div>
+                          <p className="text-slate-305 text-slate-300 font-normal mt-0.5 font-sans break-words">{msg.text}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* FORM INPUT AREA FOR USER MESSAGES */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!userChatText.trim()) return;
+                    const now = new Date();
+                    const hour = now.getHours().toString().padStart(2, '0');
+                    const min = now.getMinutes().toString().padStart(2, '0');
+                    const timeStr = `${hour}:${min}`;
+                    
+                    setChatMessages((prev) => [
+                      ...prev,
+                      {
+                        id: Date.now(),
+                        user: theoryUsername.trim() || 'CriminologoAnonimo',
+                        faction: theoryFaction,
+                        text: userChatText,
+                        time: timeStr
+                      }
+                    ]);
+                    setUserChatText('');
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    type="text"
+                    required
+                    value={userChatText}
+                    onChange={(e) => setUserChatText(e.target.value)}
+                    placeholder="Digita messaggio e premi Invio... Spedisci sotto crittografia."
+                    className="flex-grow bg-black text-xs text-brand-cyan placeholder-slate-700 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-pink font-mono"
+                  />
                   <button
                     type="submit"
-                    className="w-full bg-brand-pink hover:bg-brand-pink/90 text-white text-[11px] font-black py-3 rounded transition uppercase tracking-widest -skew-x-12"
+                    className="px-6 py-3 bg-brand-pink text-white font-black text-xs uppercase tracking-widest rounded-lg transition duration-200 hover:bg-brand-pink/90 cursor-pointer -skew-x-12"
                   >
-                    Pubblica Nel Forum →
+                    INVIA LIVE →
                   </button>
                 </form>
+                {theoryUsername.trim() === '' && (
+                  <p className="text-[10px] text-slate-500 font-mono mt-2.5 uppercase font-medium">
+                    🔍 NOTA: Puoi personalizzare il tuo nome e fazione modificando il form "Condividi una Teoria" nel primo tab!
+                  </p>
+                )}
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1963,7 +2927,7 @@ export default function App() {
                       >
                         <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-slate-900 border border-white/10">
                           <img
-                            src={post.imageUrl}
+                            src={resolveImg(post.imageUrl)}
                             alt={post.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {
