@@ -35,7 +35,7 @@ import {
   Settings,
   ArrowRight
 } from 'lucide-react';
-import { BLOG_POSTS, INITIAL_EVENTS, AFFILIATE_PRODUCTS, INITIAL_THEORIES, SEO_KEYWORD_CHIPS, SEO_CHECKLIST, RETRO_RADIO_STATIONS } from './data';
+import { BLOG_POSTS, INITIAL_EVENTS, AFFILIATE_PRODUCTS, INITIAL_THEORIES, SEO_KEYWORD_CHIPS, SEO_CHECKLIST, RETRO_RADIO_STATIONS, bannerImg, gamingSetupImg, luciaArtworkImg, mapLeakImg } from './data';
 import { BlogPost, LaunchEvent, AffiliateProduct, CommunityTheory } from './types';
 
 export default function App() {
@@ -117,7 +117,7 @@ export default function App() {
     setCmsDate(new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }));
     setCmsAuthor('Frank Leone');
     setCmsReadTime('5 min lettura');
-    setCmsImageUrl('/src/assets/images/gta6_hero_banner_1780604924235.png');
+    setCmsImageUrl(bannerImg);
     setCmsKeywords('Mappa GTA 6, GTA 4, Vice City News, preordine GTA VI');
     setCmsViralHook('💥 CLAMOROSO LEAK: Ecco gli ultimi segreti appena scoperti! #GTA6 #ViceCity');
   };
@@ -173,7 +173,7 @@ export default function App() {
         date: cmsDate || new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }),
         author: cmsAuthor || 'Frank Leone',
         readTime: cmsReadTime || '5 min lettura',
-        imageUrl: cmsImageUrl || '/src/assets/images/gta6_hero_banner_1780604924235.png',
+        imageUrl: cmsImageUrl || bannerImg,
         seoKeywords: keywordsArray,
         viralRating: 5,
         viralHook: cmsViralHook || `🚨 NOTIZIA BOMBA: ${cmsTitle}! Scoprila subito nel feed!`,
@@ -906,7 +906,7 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                   <div className="lg:col-span-7 h-64 sm:h-96 relative">
                     <img
-                      src="/src/assets/images/gta6_hero_banner_1780604924235.png"
+                      src={bannerImg}
                       alt="GTA 6 Official Poster Background"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
@@ -1057,7 +1057,7 @@ export default function App() {
                         {selectedPost.category === 'Guide' ? (
                           <>
                             <img
-                              src="/src/assets/images/gta6_gaming_setup_1780604939913.png"
+                              src={gamingSetupImg}
                               alt="Gaming setup specs"
                               referrerPolicy="no-referrer"
                               className="rounded-lg mb-3.5 w-full h-32 object-cover"
@@ -1068,7 +1068,7 @@ export default function App() {
                         ) : selectedPost.category === 'Analysis' ? (
                           <>
                             <img
-                              src="/src/assets/images/gta6_gaming_setup_1780604939913.png"
+                              src={gamingSetupImg}
                               alt="PlayStation 5 setup mockup"
                               referrerPolicy="no-referrer"
                               className="rounded-lg mb-3.5 w-full h-32 object-cover"
@@ -1079,7 +1079,7 @@ export default function App() {
                         ) : (
                           <>
                             <img
-                              src="/src/assets/images/gta6_hero_banner_1780604924235.png"
+                              src={bannerImg}
                               alt="GTA 6 Preorder Banner"
                               referrerPolicy="no-referrer"
                               className="rounded-lg mb-3.5 w-full h-32 object-cover"
@@ -1267,7 +1267,7 @@ export default function App() {
 
                 <div className="md:col-span-4 max-h-56">
                   <img
-                    src="/src/assets/images/gta6_gaming_setup_1780604939913.png"
+                    src={gamingSetupImg}
                     alt="GTA 6 themed ultimate gaming rig"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover rounded-xl shadow-lg border border-white/10"
@@ -1967,7 +1967,7 @@ export default function App() {
                             alt={post.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/src/assets/images/gta6_hero_banner_1780604924235.png';
+                              (e.target as HTMLImageElement).src = bannerImg;
                             }}
                           />
                         </div>

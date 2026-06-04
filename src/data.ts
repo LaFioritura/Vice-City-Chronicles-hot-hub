@@ -5,6 +5,13 @@
 
 import { BlogPost, LaunchEvent, AffiliateProduct, CommunityTheory } from './types';
 
+import bannerImg from './assets/images/gta6_hero_banner_1780604924235.png';
+import gamingSetupImg from './assets/images/gta6_gaming_setup_1780604939913.png';
+import luciaArtworkImg from './assets/images/gta6_lucia_artwork_1780604971631.png';
+import mapLeakImg from './assets/images/gta6_map_leak_1780604987266.png';
+
+export { bannerImg, gamingSetupImg, luciaArtworkImg, mapLeakImg };
+
 export const BLOG_POSTS: BlogPost[] = [
   {
     id: 'gta6-mappa-confronto-vice-city-leonida',
@@ -15,7 +22,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '4 Giugno 2026',
     author: 'Frank "Vice" Leone',
     readTime: '6 min lettura',
-    imageUrl: '/src/assets/images/gta6_map_leak_1780604987266.png',
+    imageUrl: mapLeakImg,
     seoKeywords: ['Mappa GTA 6', 'Guida Mappa Leonida', 'Vice City e isole', 'Grand Theft Auto 6 leak mappa', 'Rockstar Games mappa ufficiale'],
     viralRating: 5,
     viralHook: '🚨 LA MAPPA DI GTA 6 È GIGANTESCA! Ecco il confronto sbalorditivo con GTA V che ha fatto impazzire Reddit! 🗺️🏎️ #GTA6 #GamingNews #Shorts',
@@ -43,7 +50,7 @@ Il motore grafico **RAGE 9** introduce una fisica dei fluidi sbalorditiva. L'acq
     date: '1 Giugno 2026',
     author: 'Elena "Neon" Diaz',
     readTime: '5 min lettura',
-    imageUrl: '/src/assets/images/gta6_lucia_artwork_1780604971631.png',
+    imageUrl: luciaArtworkImg,
     seoKeywords: ['Lucia GTA 6', 'Jason GTA 6', 'Protagonisti GTA VI', 'Storia d\'amore GTA 6', 'Meccanica Bonnie e Clyde'],
     viralRating: 4.8,
     viralHook: '💘 Chi comanda davvero tra Lucia e Jason in GTA 6? Ecco come Rockstar cambierà per sempre le storie nell\'open-world! 🔥 #GTA6 #LuciaAndJason #GameTheory',
@@ -68,7 +75,7 @@ Dimenticate lo switch a tre telecamere satellitari di GTA 5. In GTA 6 lo switch 
     date: '28 Maggio 2026',
     author: 'TechGuru Leonida',
     readTime: '8 min lettura',
-    imageUrl: '/src/assets/images/gta6_gaming_setup_1780604939913.png',
+    imageUrl: gamingSetupImg,
     seoKeywords: ['Miglior console per GTA 6', 'PS5 Pro GTA 6 bundle', 'Comprare GTA VI preorder', 'Configurazione gaming GTA 6', 'Requisiti PC GTA VI'],
     viralRating: 4.5,
     viralHook: '🎮 Comprare la PS5 Pro solo per GTA 6 vale davvero la spesa? Ecco cosa dicono i dati tecnici sul framerate e la risoluzione! 📈📺 #GamingSetup #GTA6Release',
@@ -95,7 +102,7 @@ Non basta solo una console. Se vuoi sentire davvero la vibrazione dei pneumatici
     date: '24 Maggio 2026',
     author: 'Tommy "Vercetti" Jr.',
     readTime: '4 min lettura',
-    imageUrl: '/src/assets/images/gta6_hero_banner_1780604924235.png',
+    imageUrl: bannerImg,
     seoKeywords: ['Auto GTA 6 lista leak', 'Migliori canzoni GTA VI radio', 'Stazioni radio Vice City 2025', 'GTA 6 leak colonna sonora'],
     viralRating: 4.9,
     viralHook: '📻 LA MUSICA DI GTA VI SARÀ UN CAPOLAVORO! Svelati i nomi di stazioni radio pazzesche con veri brani anni \'80 e rap moderno! 🏖️🎶 #GTA6Music #FlashFM #ViceCity',
@@ -128,7 +135,7 @@ export const INITIAL_EVENTS: LaunchEvent[] = [
     platform: 'Real Life',
     description: 'Incontro dal vivo a Milano per attendere l\'apertura straordinaria di mezzanotte per l\'acquisto e ritiro delle copie prestigiose e della Collector’s Edition di GTA 6. Gadget esclusivi, poster speciali e contest cosplay Lucia & Jason!',
     attendeesCount: 342,
-    bannerUrl: '/src/assets/images/gta6_lucia_artwork_1780604971631.png'
+    bannerUrl: luciaArtworkImg
   },
   {
     id: 'launch-marathon-streamers',
@@ -140,7 +147,7 @@ export const INITIAL_EVENTS: LaunchEvent[] = [
     platform: 'Twitch',
     description: 'Una maratona di 48 ore in streaming no-stop in cui i migliori content creator della community italiana si sfideranno nella speedrun delle missioni di introduzione di GTA 6, analizzando ogni easter egg in diretta.',
     attendeesCount: 1420,
-    bannerUrl: '/src/assets/images/gta6_hero_banner_1780604924235.png'
+    bannerUrl: bannerImg
   },
   {
     id: 'discord-theory-hunt',
@@ -152,7 +159,7 @@ export const INITIAL_EVENTS: LaunchEvent[] = [
     platform: 'Discord',
     description: 'Server vocali dedicati con stanze tematiche "Anti-Spoiler", "Mappa e Segreti", "Easter-Egg Hunters" e chat live per coordinarsi durante i primi colpi in GTA Online 2.',
     attendeesCount: 852,
-    bannerUrl: '/src/assets/images/gta6_map_leak_1780604987266.png'
+    bannerUrl: mapLeakImg
   }
 ];
 
@@ -160,7 +167,7 @@ export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
   {
     id: 'playstation-5-pro-bundle',
     name: 'Sony PlayStation® 5 Pro - Edizione Potenziata Leonida',
-    description: 'La console d\'eccellenza consigliata da Rockstar Games per godersi GTA 6 a 60FPS con PSSR e Ray-Tracing completo a risoluzione 4K.',
+    description: 'La console d\'eccellenza consigliata da Rockstar Games per godersi GTA 6 a 60FPS con PSSR and Ray-Tracing completo a risoluzione 4K.',
     category: 'Consoles',
     price: 799.99,
     discountPrice: 759.00,
@@ -170,7 +177,7 @@ export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     buyOn: 'Amazon Italia',
     specs: ['GPU con 67% di Compute Units in più', 'Tecnologia di upscaling PSSR a base IA', 'SSD ultra rapido da 2 Terabyte', 'Wi-Fi 7 integrato'],
     pros: ['60 Frame al secondo reali con Ray Tracing attivo', 'Tempo di caricamento di Vice City ridotto a 1.2 secondi', 'Risoluzione eccellente su monitor 4K HDR'],
-    imageUrl: '/src/assets/images/gta6_gaming_setup_1780604939913.png'
+    imageUrl: gamingSetupImg
   },
   {
     id: 'gta6-preorder-standard',
@@ -185,7 +192,7 @@ export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     buyOn: 'Instant Gaming & Amazon',
     specs: ['Copia fisica o digitale per PS5 / Xbox Series X', 'DLC Esclusivo: "Motoscafo Retro Vice Custom"', 'Accesso anticipato al comparto GTA Online 2'],
     pros: ['Prezzo minimo garantito al lancio', 'Ritiro garantito al Day One', 'Bonus preordine esclusivo per l\'online'],
-    imageUrl: '/src/assets/images/gta6_hero_banner_1780604924235.png'
+    imageUrl: bannerImg
   },
   {
     id: 'gaming-headset-astro-a50',
@@ -200,7 +207,7 @@ export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     buyOn: 'Amazon',
     specs: ['Driver Pro-G in grafene da 40mm', 'Tecnologia LIGHTSPEED Wireless a bassissima latenza', 'Supporto Audio 3D Tempest su PS5 e Dolby Atmos su Xbox', 'Batteria a ricarica rapida fino a 24 ore'],
     pros: ['Isolamento acustico d\'eccellenza', 'Dettagli dei rumori ambientali cristallini (polizia, sirene, pioggia)', 'Microfono da studio per coordinarsi nelle rapine online'],
-    imageUrl: '/src/assets/images/gta6_gaming_setup_1780604939913.png'
+    imageUrl: gamingSetupImg
   },
   {
     id: 'vice-city-tshirt-vintage',
@@ -215,7 +222,7 @@ export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     buyOn: 'Fan Store Ufficiale',
     specs: ['100% Cotone Premium idrorestringente', 'Grafica serigrafata resistente a lavaggi ad alte temperature', 'Vestibilità relax comoda stile hip-hop anni 80'],
     pros: ['Stile streetwear iconico perfetto per eventi di lancio', 'Prodotto con licenza originale ed etichetta Rockstar Games', 'Tessuto traspirante ideale anche per lunghe sessioni estive'],
-    imageUrl: '/src/assets/images/gta6_lucia_artwork_1780604971631.png'
+    imageUrl: luciaArtworkImg
   }
 ];
 
